@@ -1,4 +1,4 @@
-type Sheet = { name: string; rows: string[][]; header: boolean; total: number; columns: number };
+import type { Sheet } from '../components/attachment-data';
 
 export interface ColumnMapping {
   name: string;
@@ -94,6 +94,11 @@ function convertValue(value: string, type: ColumnMapping['type']): unknown {
 
 export function detectColumnMappings(sheet: Sheet, useHeader: boolean): ColumnMapping[] {
   const width = Math.max(0, ...sheet.rows.map((row) => row.length));
+
+  if (width > 50) {
+    throw new Error(`Table has ${width} columns, maximum is 50`);
+  }
+
   const dataRows = useHeader && sheet.rows.length > 1 ? sheet.rows.slice(1) : sheet.rows;
 
   return Array.from({ length: width }, (_, index) => {

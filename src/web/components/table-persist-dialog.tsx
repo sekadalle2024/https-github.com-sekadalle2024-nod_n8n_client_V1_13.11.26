@@ -16,8 +16,7 @@ import {
   type ColumnMapping,
 } from '../lib/table-conversion';
 import { saveSheetToAuditTable, checkTableExists } from '../lib/api-audit-tables';
-
-type Sheet = { name: string; rows: string[][]; header: boolean; total: number; columns: number };
+import type { Sheet } from './attachment-data';
 
 interface TablePersistDialogProps {
   sheet: Sheet;
@@ -46,8 +45,13 @@ export function TablePersistDialog({
     if (open) {
       setTableName(artifactName);
       setUseHeader(sheet.header);
-      setColumnMappings(detectColumnMappings(sheet, sheet.header));
-      setError(null);
+      try {
+        setColumnMappings(detectColumnMappings(sheet, sheet.header));
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to detect columns');
+        setColumnMappings([]);
+      }
     }
   }, [open, sheet, artifactName]);
 
@@ -79,12 +83,12 @@ export function TablePersistDialog({
 
       const { schemaId } = await saveSheetToAuditTable(converted);
 
-      const mapping = {
-        [artifactId]: schemaId,
-      };
       const stored = localStorage.getItem('nod-artifact-tables');
       const existing = stored ? JSON.parse(stored) : {};
-      localStorage.setItem('nod-artifact-tables', JSON.stringify({ ...existing, ...mapping }));
+      localStorage.setItem(
+        'nod-artifact-tables',
+        JSON.stringify({ ...existing, [artifactId]: schemaId }),
+      );
 
       onSaved?.(schemaId);
       onClose();

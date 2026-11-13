@@ -43,15 +43,25 @@ export async function saveSheetToAuditTable(
   const { schema } = (await createResponse.json()) as { schema: TableSchema };
 
   if (converted.rows.length > 0) {
-    const bulkResponse = await fetch(`/api/audit/schemas/${schema.id}/data/bulk`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ rows: converted.rows }),
-    });
+    try {
+      const bulkResponse = await fetch(`/api/audit/schemas/${schema.id}/data/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ rows: converted.rows }),
+      });
 
-    if (!bulkResponse.ok) {
-      throw new Error('Failed to insert table data');
+      if (!bulkResponse.ok) {
+        throw new Error('Failed to insert table data');
+      }
+    } catch (err) {
+      try {
+        await fetch(`/api/audit/schemas/${schema.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+      } catch {}
+      throw err;
     }
   }
 

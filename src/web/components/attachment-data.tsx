@@ -14,7 +14,7 @@ import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { remarkLinkDestinations } from '../lib/markdown';
-import { Download, ExternalLink, FileText, Folder, Database, Clock } from './icons';
+import { Download, ExternalLink, FileText, Folder, Database } from './icons';
 import { safeMessageLink } from '../lib/message-links';
 import { formatNumber } from '../lib/date-format';
 import { fileSize, textPreviewBytes } from '../lib/attachment-kind';
@@ -45,7 +45,13 @@ type DataKind =
   | 'presentation'
   | 'archive'
   | 'n8n-workflow';
-type Sheet = { name: string; rows: string[][]; header: boolean; total: number; columns: number };
+export type Sheet = {
+  name: string;
+  rows: string[][];
+  header: boolean;
+  total: number;
+  columns: number;
+};
 
 const previewRows = 202;
 const previewColumns = 100;
@@ -208,6 +214,9 @@ function SheetView({
   const [menuState, setMenuState] = useState<{ x: number; y: number } | null>(null);
   const [persistDialogOpen, setPersistDialogOpen] = useState(false);
   const [savedSchemaId, setSavedSchemaId] = useState<string | null>(null);
+  const menuElementRef = useCallback((element: HTMLDivElement | null) => {
+    if (element) element.focus({ preventScroll: true });
+  }, []);
   const multiple = sheets.length > 1;
   const sheet = sheets[selected];
   const width = Math.max(0, ...sheet.rows.map((row) => row.length));
@@ -245,6 +254,29 @@ function SheetView({
       ),
     [onDetail, total, sheet.columns],
   );
+
+  useEffect(() => {
+    if (!menuState) return;
+    const closeMenu = () => setMenuState(null);
+    const outside = (event: PointerEvent) => {
+      if (!(event.target instanceof Node)) return;
+      const menu = document.querySelector('.sheet-context-menu');
+      if (menu?.contains(event.target)) return;
+      closeMenu();
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeMenu();
+      }
+    };
+    document.addEventListener('pointerdown', outside);
+    document.addEventListener('keydown', keydown);
+    return () => {
+      document.removeEventListener('pointerdown', outside);
+      document.removeEventListener('keydown', keydown);
+    };
+  }, [menuState]);
 
   const handleContextMenu = useCallback(
     (event: React.MouseEvent) => {
@@ -342,24 +374,19 @@ function SheetView({
       {menuState &&
         createPortal(
           <ActionMenuSurface
+            className="sheet-context-menu"
             style={{
               position: 'fixed',
               left: `${menuState.x}px`,
               top: `${menuState.y}px`,
               zIndex: 9999,
             }}
-            onBlur={closeMenu}
-            onMouseDown={(e) => e.stopPropagation()}
-            onClick={closeMenu}
-            tabIndex={-1}
+            ref={menuElementRef}
+            aria-label="Table actions"
           >
             <ActionMenuItem onClick={handleSaveTable}>
               <Database size={16} aria-hidden="true" />
               Save to Audit Table
-            </ActionMenuItem>
-            <ActionMenuItem disabled={!savedSchemaId}>
-              <Clock size={16} aria-hidden="true" />
-              View History
             </ActionMenuItem>
           </ActionMenuSurface>,
           document.body,
