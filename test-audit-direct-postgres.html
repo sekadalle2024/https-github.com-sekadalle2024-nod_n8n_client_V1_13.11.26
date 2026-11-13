@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Tables d'Audit - Direct PostgreSQL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="app" class="container mx-auto p-4">
+      <h1 class="text-3xl font-bold mb-6">📊 Test - Tables d'Audit (Direct PostgreSQL)</h1>
+
+      <!-- Messages -->
+      <div id="messages" class="mb-4"></div>
+
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-4">🎯 Interface de Test Direct</h2>
+
+        <div class="space-y-4">
+          <!-- Section 1 : Voir les tables -->
+          <div class="border rounded p-4">
+            <h3 class="font-bold text-lg mb-2">1️⃣ Voir les tables existantes</h3>
+            <p class="text-sm text-gray-600 mb-3">
+              Exécutez cette commande dans votre terminal PowerShell :
+            </p>
+            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto">
+              docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, display_name,
+              owner_id FROM audit_table_schemas;"
+            </div>
+            <button
+              onclick="copyToClipboard(1)"
+              class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+            >
+              📋 Copier la commande
+            </button>
+          </div>
+
+          <!-- Section 2 : Voir les données -->
+          <div class="border rounded p-4">
+            <h3 class="font-bold text-lg mb-2">2️⃣ Voir les données d'une table</h3>
+            <p class="text-sm text-gray-600 mb-3">Utilisez l'ID de la table (copié ci-dessus) :</p>
+            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto">
+              docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, row_data,
+              row_order, deleted_at FROM audit_table_data WHERE
+              table_schema_id='a61e51b2-994e-415b-8726-a5e85e279ded' ORDER BY row_order;"
+            </div>
+            <button
+              onclick="copyToClipboard(2)"
+              class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+            >
+              📋 Copier la commande
+            </button>
+          </div>
+
+          <!-- Section 3 : Voir l'historique -->
+          <div class="border rounded p-4">
+            <h3 class="font-bold text-lg mb-2">3️⃣ Voir l'historique des versions</h3>
+            <p class="text-sm text-gray-600 mb-3">Voir toutes les modifications enregistrées :</p>
+            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto">
+              docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, change_type,
+              changed_by, changed_at, row_data FROM audit_data_versions ORDER BY changed_at DESC
+              LIMIT 10;"
+            </div>
+            <button
+              onclick="copyToClipboard(3)"
+              class="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 text-sm"
+            >
+              📋 Copier la commande
+            </button>
+          </div>
+
+          <!-- Section 4 : Ajouter une ligne -->
+          <div class="border rounded p-4 bg-green-50">
+            <h3 class="font-bold text-lg mb-2">4️⃣ Ajouter une nouvelle ligne</h3>
+            <p class="text-sm text-gray-600 mb-3">Exécutez le script Node.js complet :</p>
+            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto">
+              node test-persistence-direct.mjs
+            </div>
+            <button
+              onclick="copyToClipboard(4)"
+              class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 text-sm"
+            >
+              📋 Copier la commande
+            </button>
+            <p class="text-xs text-gray-500 mt-2">
+              ✅ Ce script crée automatiquement : 1 table + 2 lignes + 1 modification + 1 historique
+            </p>
+          </div>
+
+          <!-- Section 5 : Nettoyer les tests -->
+          <div class="border rounded p-4 bg-red-50">
+            <h3 class="font-bold text-lg mb-2">5️⃣ Nettoyer les données de test</h3>
+            <p class="text-sm text-gray-600 mb-3">Supprimer toutes les données de test :</p>
+            <div class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto">
+              docker exec nod-local-postgres-1 psql -U nod -d nod -c "DELETE FROM
+              audit_table_schemas WHERE owner_id='test_user_001';"
+            </div>
+            <button
+              onclick="copyToClipboard(5)"
+              class="mt-2 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 text-sm"
+            >
+              📋 Copier la commande
+            </button>
+            <p class="text-xs text-red-600 mt-2">
+              ⚠️ Attention : supprime toutes les tables de test
+            </p>
+          </div>
+        </div>
+
+        <!-- Résultats actuels -->
+        <div class="mt-6 border-t pt-4">
+          <h3 class="font-bold text-lg mb-3">📊 Résultats actuels (lecture en direct)</h3>
+          <div class="bg-blue-50 border border-blue-200 rounded p-4">
+            <h4 class="font-semibold mb-2">✅ Table existante détectée :</h4>
+            <ul class="list-disc ml-6 text-sm space-y-1">
+              <li>
+                <strong>ID :</strong>
+                <code class="bg-white px-2 py-1 rounded">a61e51b2-994e-415b-8726-a5e85e279ded</code>
+              </li>
+              <li><strong>Nom :</strong> Table de Test - Risques</li>
+              <li><strong>Propriétaire :</strong> test_user_001</li>
+            </ul>
+
+            <h4 class="font-semibold mt-4 mb-2">🎯 Actions à faire maintenant :</h4>
+            <ol class="list-decimal ml-6 text-sm space-y-1">
+              <li>Cliquez sur "📋 Copier la commande" dans la section 2 ci-dessus</li>
+              <li>Ouvrez PowerShell</li>
+              <li>Collez la commande (Ctrl+V)</li>
+              <li>Appuyez sur Entrée</li>
+              <li>Vous verrez les données en JSON !</li>
+            </ol>
+          </div>
+        </div>
+
+        <!-- Pourquoi cette interface -->
+        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded p-4">
+          <h4 class="font-bold mb-2">💡 Pourquoi cette interface ?</h4>
+          <p class="text-sm text-gray-700 mb-2">
+            L'interface précédente nécessite que le serveur Nod tourne sur
+            <code>http://localhost:4310</code>. Comme il n'est pas démarré actuellement, cette
+            interface vous permet de tester directement avec PostgreSQL.
+          </p>
+          <p class="text-sm text-gray-700">
+            <strong>Avantage :</strong> Vous pouvez vérifier que toutes les données sont bien
+            persistées dans la base de données ! 🎉
+          </p>
+        </div>
+
+        <!-- Comment démarrer le serveur -->
+        <div class="mt-6 bg-purple-50 border border-purple-200 rounded p-4">
+          <h4 class="font-bold mb-2">🚀 Démarrer le serveur Nod (optionnel)</h4>
+          <p class="text-sm text-gray-700 mb-3">
+            Si vous voulez utiliser l'interface web complète, démarrez le serveur :
+          </p>
+          <div
+            class="bg-gray-900 text-green-400 p-3 rounded font-mono text-sm overflow-x-auto mb-2"
+          >
+            cd h:\nod_n8n pnpm exec tsx src/server/index.ts
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            ⏱️ Le serveur mettra ~30 secondes à démarrer. Vous verrez :
+            <code>Nod is ready at http://localhost:4310/...</code>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const commands = {
+        1: 'docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, display_name, owner_id FROM audit_table_schemas;"',
+        2: 'docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, row_data, row_order, deleted_at FROM audit_table_data WHERE table_schema_id=\'a61e51b2-994e-415b-8726-a5e85e279ded\' ORDER BY row_order;"',
+        3: 'docker exec nod-local-postgres-1 psql -U nod -d nod -c "SELECT id, change_type, changed_by, changed_at, row_data FROM audit_data_versions ORDER BY changed_at DESC LIMIT 10;"',
+        4: 'node test-persistence-direct.mjs',
+        5: 'docker exec nod-local-postgres-1 psql -U nod -d nod -c "DELETE FROM audit_table_schemas WHERE owner_id=\'test_user_001\';"',
+      };
+
+      function copyToClipboard(num) {
+        const command = commands[num];
+        navigator.clipboard
+          .writeText(command)
+          .then(() => {
+            showMessage(`✅ Commande ${num} copiée ! Collez-la dans PowerShell.`, 'success');
+          })
+          .catch((err) => {
+            showMessage(`❌ Erreur de copie : ${err.message}`, 'error');
+          });
+      }
+
+      function showMessage(text, type = 'info') {
+        const colors = {
+          success: 'bg-green-100 border-green-400 text-green-700',
+          error: 'bg-red-100 border-red-400 text-red-700',
+          info: 'bg-blue-100 border-blue-400 text-blue-700',
+          warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        };
+
+        const div = document.createElement('div');
+        div.className = `border px-4 py-3 rounded ${colors[type]}`;
+        div.textContent = text;
+
+        const messages = document.getElementById('messages');
+        messages.innerHTML = '';
+        messages.appendChild(div);
+
+        setTimeout(() => div.remove(), 5000);
+      }
+
+      // Message de bienvenue
+      window.addEventListener('load', () => {
+        showMessage(
+          '🎯 Interface prête ! Cliquez sur les boutons pour copier les commandes.',
+          'success',
+        );
+      });
+    </script>
+  </body>
+</html>

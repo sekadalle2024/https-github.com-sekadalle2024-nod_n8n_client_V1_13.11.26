@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Tables d'Audit - Nod</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-50">
+    <div id="app" class="container mx-auto p-4">
+      <h1 class="text-3xl font-bold mb-6">📊 Test - Tables d'Audit Nod</h1>
+
+      <!-- Messages -->
+      <div id="messages"></div>
+
+      <div class="grid grid-cols-4 gap-4 mt-4">
+        <!-- Liste des tables -->
+        <div class="col-span-1">
+          <div class="bg-white rounded-lg shadow p-4">
+            <h2 class="font-bold mb-3">Tables disponibles</h2>
+            <button
+              onclick="loadSchemas()"
+              class="w-full bg-blue-500 text-white px-4 py-2 rounded mb-3 hover:bg-blue-600"
+            >
+              🔄 Recharger
+            </button>
+            <div id="schemas-list" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <!-- Données de la table -->
+        <div class="col-span-3">
+          <div class="bg-white rounded-lg shadow">
+            <div
+              id="table-header"
+              class="bg-gray-100 p-4 border-b flex justify-between items-center"
+            >
+              <h2 class="font-bold text-lg">Sélectionnez une table</h2>
+            </div>
+            <div id="table-content" class="p-4 text-center text-gray-500">
+              Choisissez une table dans la liste à gauche
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentSchema = null;
+      let currentData = [];
+
+      // Configuration API
+      const API_BASE = 'http://localhost:4310';
+
+      // Afficher un message
+      function showMessage(text, type = 'info') {
+        const colors = {
+          success: 'bg-green-100 border-green-400 text-green-700',
+          error: 'bg-red-100 border-red-400 text-red-700',
+          info: 'bg-blue-100 border-blue-400 text-blue-700',
+          warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        };
+
+        const div = document.createElement('div');
+        div.className = `border px-4 py-3 rounded mb-4 ${colors[type]}`;
+        div.textContent = text;
+
+        const messages = document.getElementById('messages');
+        messages.innerHTML = '';
+        messages.appendChild(div);
+
+        setTimeout(() => div.remove(), 5000);
+      }
+
+      // Charger la liste des schémas
+      async function loadSchemas() {
+        try {
+          showMessage('Chargement des tables...', 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/schemas`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status} - ${await response.text()}`);
+          }
+
+          const schemas = await response.json();
+
+          if (schemas.length === 0) {
+            document.getElementById('schemas-list').innerHTML =
+              '<p class="text-sm text-gray-500">Aucune table trouvée</p>';
+            showMessage("Aucune table d'audit trouvée. Créez-en une depuis n8n.", 'warning');
+            return;
+          }
+
+          const list = document.getElementById('schemas-list');
+          list.innerHTML = schemas
+            .map(
+              (schema) => `
+                    <button 
+                        onclick="selectSchema('${schema.id}')" 
+                        class="w-full text-left px-3 py-2 rounded bg-gray-100 hover:bg-gray-200 text-sm"
+                    >
+                        ${schema.display_name}
+                    </button>
+                `,
+            )
+            .join('');
+
+          showMessage(`${schemas.length} table(s) chargée(s)`, 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+          document.getElementById('schemas-list').innerHTML =
+            '<p class="text-sm text-red-500">Erreur de chargement</p>';
+        }
+      }
+
+      // Sélectionner un schéma
+      async function selectSchema(schemaId) {
+        try {
+          showMessage('Chargement du schéma...', 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/schemas/${schemaId}`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          currentSchema = await response.json();
+          await loadTableData(schemaId);
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Charger les données d'une table
+      async function loadTableData(schemaId) {
+        try {
+          const response = await fetch(`${API_BASE}/api/audit/schemas/${schemaId}/data`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          currentData = await response.json();
+          renderTable();
+          showMessage(`${currentData.length} ligne(s) chargée(s)`, 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Rendre la table
+      function renderTable() {
+        if (!currentSchema) return;
+
+        // En-tête
+        document.getElementById('table-header').innerHTML = `
+                <h2 class="font-bold text-lg">${currentSchema.display_name}</h2>
+                <button onclick="addRow()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    + Ajouter une ligne
+                </button>
+            `;
+
+        // Contenu
+        if (currentData.length === 0) {
+          document.getElementById('table-content').innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        Aucune donnée. Cliquez sur "+ Ajouter une ligne" pour commencer.
+                    </div>
+                `;
+          return;
+        }
+
+        const columns = currentSchema.column_definitions;
+
+        const tableHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                ${columns
+                                  .map(
+                                    (col) => `
+                                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">
+                                        ${col.label || col.name}
+                                        ${col.required ? '<span class="text-red-500">*</span>' : ''}
+                                        <br><span class="text-xs text-gray-500">(${col.type})</span>
+                                    </th>
+                                `,
+                                  )
+                                  .join('')}
+                                <th class="px-4 py-2 text-center text-sm font-medium text-gray-700 border-b w-32">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${currentData
+                              .map(
+                                (row) => `
+                                <tr class="border-b hover:bg-gray-50">
+                                    ${columns
+                                      .map((col) => {
+                                        const value = row.row_data[col.name];
+                                        let display = value ?? '-';
+
+                                        if (col.type === 'boolean') {
+                                          display = value ? '✓ Oui' : '✗ Non';
+                                        } else if (col.type === 'number' && value != null) {
+                                          display = value.toLocaleString('fr-FR');
+                                        } else if (col.type === 'date' && value) {
+                                          display = new Date(value).toLocaleDateString('fr-FR');
+                                        }
+
+                                        return `
+                                            <td class="px-4 py-2 text-sm">
+                                                <div 
+                                                    class="cursor-pointer hover:bg-blue-50 px-2 py-1 rounded" 
+                                                    onclick='editCell("${row.id}", "${col.name}", ${JSON.stringify(value)})'
+                                                    title="Cliquer pour éditer"
+                                                >
+                                                    ${display}
+                                                </div>
+                                            </td>
+                                        `;
+                                      })
+                                      .join('')}
+                                    <td class="px-4 py-2 text-center space-x-2">
+                                        <button 
+                                            onclick="deleteRow('${row.id}')" 
+                                            class="text-red-500 hover:text-red-700"
+                                            title="Supprimer"
+                                        >
+                                            🗑️
+                                        </button>
+                                        <button 
+                                            onclick="viewHistory('${row.id}')" 
+                                            class="text-blue-500 hover:text-blue-700"
+                                            title="Historique"
+                                        >
+                                            📜
+                                        </button>
+                                    </td>
+                                </tr>
+                            `,
+                              )
+                              .join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="bg-gray-50 p-3 border-t text-sm text-gray-600">
+                    ${currentData.length} ligne(s) • Cliquez sur une cellule pour éditer
+                </div>
+            `;
+
+        document.getElementById('table-content').innerHTML = tableHTML;
+      }
+
+      // Éditer une cellule
+      function editCell(rowId, columnName, currentValue) {
+        const column = currentSchema.column_definitions.find((c) => c.name === columnName);
+        if (!column) return;
+
+        let inputHTML = '';
+
+        if (column.type === 'select' && column.options) {
+          inputHTML = `
+                    <select id="edit-input" class="border px-2 py-1 rounded w-full">
+                        <option value="">-- Choisir --</option>
+                        ${column.options
+                          .map(
+                            (opt) =>
+                              `<option value="${opt}" ${currentValue === opt ? 'selected' : ''}>${opt}</option>`,
+                          )
+                          .join('')}
+                    </select>
+                `;
+        } else if (column.type === 'boolean') {
+          inputHTML = `
+                    <input 
+                        type="checkbox" 
+                        id="edit-input" 
+                        ${currentValue ? 'checked' : ''}
+                        class="w-5 h-5"
+                    >
+                `;
+        } else {
+          const type =
+            column.type === 'number' ? 'number' : column.type === 'date' ? 'date' : 'text';
+          inputHTML = `
+                    <input 
+                        type="${type}" 
+                        id="edit-input" 
+                        value="${currentValue ?? ''}" 
+                        class="border px-2 py-1 rounded w-full"
+                    >
+                `;
+        }
+
+        const modal = `
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="edit-modal">
+                    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                        <h3 class="font-bold text-lg mb-4">Éditer : ${column.label || column.name}</h3>
+                        <div class="mb-4">
+                            ${inputHTML}
+                        </div>
+                        <div class="flex gap-2 justify-end">
+                            <button onclick="closeEditModal()" class="bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">
+                                Annuler
+                            </button>
+                            <button onclick="saveCell('${rowId}', '${columnName}', '${column.type}')" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                Sauvegarder
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+        document.body.insertAdjacentHTML('beforeend', modal);
+        document.getElementById('edit-input').focus();
+      }
+
+      // Fermer la modale d'édition
+      function closeEditModal() {
+        const modal = document.getElementById('edit-modal');
+        if (modal) modal.remove();
+      }
+
+      // Sauvegarder la modification
+      async function saveCell(rowId, columnName, columnType) {
+        const input = document.getElementById('edit-input');
+        let newValue;
+
+        if (columnType === 'boolean') {
+          newValue = input.checked;
+        } else if (columnType === 'number') {
+          newValue = parseFloat(input.value) || 0;
+        } else {
+          newValue = input.value;
+        }
+
+        const row = currentData.find((r) => r.id === rowId);
+        if (!row) return;
+
+        const newRowData = {
+          ...row.row_data,
+          [columnName]: newValue,
+        };
+
+        try {
+          showMessage('Sauvegarde en cours...', 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/data/${rowId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ row_data: newRowData }),
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          closeEditModal();
+          await loadTableData(currentSchema.id);
+          showMessage('✓ Modification sauvegardée (version créée)', 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Ajouter une ligne
+      async function addRow() {
+        if (!currentSchema) return;
+
+        const emptyRow = {};
+        currentSchema.column_definitions.forEach((col) => {
+          if (col.type === 'boolean') emptyRow[col.name] = false;
+          else if (col.type === 'number') emptyRow[col.name] = 0;
+          else emptyRow[col.name] = '';
+        });
+
+        try {
+          showMessage('Ajout en cours...', 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/schemas/${currentSchema.id}/data`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ row_data: emptyRow }),
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          await loadTableData(currentSchema.id);
+          showMessage('✓ Nouvelle ligne ajoutée', 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Supprimer une ligne
+      async function deleteRow(rowId) {
+        if (
+          !confirm(
+            'Voulez-vous vraiment supprimer cette ligne ?\n\n(Suppression douce : récupérable)',
+          )
+        )
+          return;
+
+        try {
+          showMessage('Suppression en cours...', 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/data/${rowId}`, {
+            method: 'DELETE',
+            credentials: 'include',
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          await loadTableData(currentSchema.id);
+          showMessage('✓ Ligne supprimée (soft delete)', 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Voir l'historique
+      async function viewHistory(rowId) {
+        try {
+          showMessage("Chargement de l'historique...", 'info');
+
+          const response = await fetch(`${API_BASE}/api/audit/data/${rowId}/versions`, {
+            credentials: 'include',
+          });
+
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+          const versions = await response.json();
+
+          const modal = `
+                    <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" id="history-modal">
+                        <div class="bg-white rounded-lg p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+                            <h3 class="font-bold text-lg mb-4">📜 Historique des modifications</h3>
+                            ${
+                              versions.length === 0
+                                ? '<p class="text-gray-500">Aucune version historique</p>'
+                                : `<div class="space-y-3">
+                                    ${versions
+                                      .map(
+                                        (v, i) => `
+                                        <div class="border rounded p-3 bg-gray-50">
+                                            <div class="text-sm text-gray-600 mb-1">
+                                                Version ${i + 1} • ${new Date(v.changed_at).toLocaleString('fr-FR')}
+                                                ${v.changed_by ? ` • Par: ${v.changed_by}` : ''}
+                                            </div>
+                                            <div class="text-xs">
+                                                <strong>Type:</strong> ${v.change_type}
+                                            </div>
+                                            <details class="mt-2">
+                                                <summary class="cursor-pointer text-blue-500">Voir les données</summary>
+                                                <pre class="text-xs mt-2 bg-white p-2 rounded overflow-x-auto">${JSON.stringify(v.row_data, null, 2)}</pre>
+                                            </details>
+                                        </div>
+                                    `,
+                                      )
+                                      .join('')}
+                                </div>`
+                            }
+                            <button onclick="closeHistoryModal()" class="mt-4 bg-gray-300 px-4 py-2 rounded hover:bg-gray-400">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+          document.body.insertAdjacentHTML('beforeend', modal);
+          showMessage(`${versions.length} version(s) trouvée(s)`, 'success');
+        } catch (error) {
+          console.error('Erreur:', error);
+          showMessage(`Erreur: ${error.message}`, 'error');
+        }
+      }
+
+      // Fermer la modale d'historique
+      function closeHistoryModal() {
+        const modal = document.getElementById('history-modal');
+        if (modal) modal.remove();
+      }
+
+      // Chargement initial
+      window.addEventListener('load', () => {
+        loadSchemas();
+      });
+    </script>
+  </body>
+</html>
