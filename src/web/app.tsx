@@ -8,7 +8,6 @@ import { Channels } from './pages/channels';
 import { Credentials, Payment } from './pages/credentials';
 import { Scheduled } from './pages/tasks';
 import { PreparedWork } from './pages/prepared';
-import { AuditTablesPage } from './pages/audit-tables';
 import { useAppState } from './hooks/use-app-state';
 import { useChatUnread } from './hooks/use-chat-unread';
 import { useBrowserNotifications } from './hooks/use-browser-notifications';
@@ -271,7 +270,6 @@ function Workspace({
             )}
             {path === '/apps' && <Apps configuration={state?.configuration} onAsk={askInChat} />}
             {path === '/channels' && <Channels />}
-            {path === '/audit-tables' && <AuditTablesPage />}
             {path === '/tasks' && (
               <Scheduled onAsk={askInChat} activity={connected ? state?.activity : undefined} />
             )}

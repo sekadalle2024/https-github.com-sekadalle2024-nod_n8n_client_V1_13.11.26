@@ -18,6 +18,13 @@ export async function initializeAuditTables() {
     );
     CREATE INDEX IF NOT EXISTS audit_table_schemas_owner ON audit_table_schemas(owner_id, deleted_at);
     
+    DO $$ BEGIN
+      ALTER TABLE audit_table_schemas ADD COLUMN IF NOT EXISTS category text DEFAULT 'general'
+        CHECK (category IN ('accounting', 'compliance', 'risk', 'general'));
+    EXCEPTION
+      WHEN duplicate_column THEN NULL;
+    END $$;
+    
     CREATE TABLE IF NOT EXISTS audit_table_data (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       owner_id text NOT NULL,
@@ -66,6 +73,7 @@ export interface AuditTableSchema {
   display_name: string;
   n8n_workflow_id: string | null;
   column_definitions: ColumnDefinition[];
+  category: 'accounting' | 'compliance' | 'risk' | 'general';
   created_at: Date;
   updated_at: Date;
   deleted_at: Date | null;
@@ -108,20 +116,23 @@ export async function createTableSchema(
     display_name,
     n8n_workflow_id,
     column_definitions,
+    category = 'general',
   }: {
     table_name: string;
     display_name: string;
     n8n_workflow_id?: string;
     column_definitions: ColumnDefinition[];
+    category?: 'accounting' | 'compliance' | 'risk' | 'general';
   },
 ): Promise<AuditTableSchema> {
   const result = await client.query<AuditTableSchema>(
-    `INSERT INTO audit_table_schemas (owner_id, table_name, display_name, n8n_workflow_id, column_definitions)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO audit_table_schemas (owner_id, table_name, display_name, n8n_workflow_id, column_definitions, category)
+     VALUES ($1, $2, $3, $4, $5, $6)
      ON CONFLICT (owner_id, table_name) DO UPDATE
        SET display_name = EXCLUDED.display_name,
            n8n_workflow_id = EXCLUDED.n8n_workflow_id,
            column_definitions = EXCLUDED.column_definitions,
+           category = EXCLUDED.category,
            updated_at = now(),
            deleted_at = NULL
      RETURNING *`,
@@ -131,6 +142,7 @@ export async function createTableSchema(
       display_name,
       n8n_workflow_id || null,
       JSON.stringify(column_definitions),
+      category,
     ],
   );
   return result.rows[0];

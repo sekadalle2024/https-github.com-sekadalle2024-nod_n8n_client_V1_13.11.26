@@ -1,0 +1,182 @@
+.editable-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--background, #fff);
+  border-radius: 8px;
+  border: 1px solid var(--border, #e0e0e0);
+}
+
+.editable-table-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.editable-table-toolbar button {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border, #d0d0d0);
+  background: var(--button-background, #f5f5f5);
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.editable-table-toolbar button:hover:not(:disabled) {
+  background: var(--button-hover-background, #e8e8e8);
+}
+
+.editable-table-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.category-badge {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.category-accounting {
+  background: #e6f7ff;
+  color: #0050b3;
+}
+
+.category-compliance {
+  background: #f6ffed;
+  color: #389e0d;
+}
+
+.category-risk {
+  background: #fff7e6;
+  color: #d46b08;
+}
+
+.category-general {
+  background: #f0f0f0;
+  color: #595959;
+}
+
+.save-status {
+  margin-left: auto;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.save-status-saving {
+  color: #fa8c16;
+  background: #fff7e6;
+}
+
+.save-status-saved {
+  color: #52c41a;
+  background: #f6ffed;
+}
+
+.save-status-error {
+  color: #f5222d;
+  background: #fff1f0;
+}
+
+.editable-table-scroll {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
+  border: 1px solid var(--border, #e0e0e0);
+  border-radius: 4px;
+}
+
+.editable-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.editable-table th,
+.editable-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border, #e0e0e0);
+  text-align: left;
+  min-width: 100px;
+}
+
+.editable-table th {
+  background: var(--table-header-background, #fafafa);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.editable-table thead th:first-child,
+.editable-table tbody th {
+  background: var(--table-header-background, #fafafa);
+  font-weight: 500;
+  text-align: center;
+  min-width: 60px;
+  position: sticky;
+  left: 0;
+  z-index: 11;
+}
+
+.editable-table thead th:first-child {
+  z-index: 12;
+}
+
+.editable-cell {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: inherit;
+  font-size: inherit;
+  border-radius: 2px;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.editable-cell:focus {
+  outline: none;
+  border: 1px solid var(--focus-border, #1890ff);
+  background: var(--input-focus-background, #fff);
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.editable-cell:hover {
+  border-color: var(--border, #d0d0d0);
+  background: var(--input-hover-background, #fafafa);
+}
+
+.delete-row-btn {
+  padding: 4px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.delete-row-btn:hover {
+  opacity: 1;
+  background: #fff1f0;
+  border-radius: 4px;
+}
+
+.editable-table-loading {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-muted, #8c8c8c);
+  font-size: 14px;
+}
+
+.editable-table tbody tr:hover {
+  background: var(--row-hover-background, #fafafa);
+}

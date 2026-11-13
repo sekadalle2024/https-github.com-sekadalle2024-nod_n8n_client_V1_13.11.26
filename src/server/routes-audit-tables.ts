@@ -63,6 +63,7 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
           display_name: z.string().min(1).max(200),
           n8n_workflow_id: z.string().optional(),
           column_definitions: z.array(columnDefinitionSchema),
+          category: z.enum(['accounting', 'compliance', 'risk', 'general']).default('general'),
         })
         .parse(request.body);
 
@@ -73,6 +74,7 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
             display_name: body.display_name,
             n8n_workflow_id: body.n8n_workflow_id,
             column_definitions: body.column_definitions as ColumnDefinition[],
+            category: body.category,
           }),
         pool,
       );
@@ -200,6 +202,42 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
       return { error: 'Failed to update table data' };
     }
   });
+
+  app.patch<{ Params: { schemaId: string } }>(
+    '/api/audit/schemas/:schemaId/data/batch',
+    async (request, reply) => {
+      try {
+        const { schemaId } = z.object({ schemaId: z.uuid() }).parse(request.params);
+        const body = z
+          .object({
+            updates: z.array(
+              z.object({
+                data_id: z.string().uuid(),
+                row_data: z.record(z.unknown()),
+              }),
+            ),
+          })
+          .parse(request.body);
+
+        const results = await transaction(async (client) => {
+          const updated = [];
+          for (const update of body.updates) {
+            const result = await updateTableData(client, {
+              data_id: update.data_id,
+              row_data: update.row_data,
+            });
+            if (result) updated.push(result);
+          }
+          return updated;
+        }, pool);
+
+        return { data: results };
+      } catch (error) {
+        reply.code(500);
+        return { error: 'Failed to batch update table data' };
+      }
+    },
+  );
 
   app.delete<{ Params: { dataId: string } }>('/api/audit/data/:dataId', async (request, reply) => {
     try {

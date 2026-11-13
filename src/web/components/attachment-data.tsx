@@ -10,11 +10,10 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { remarkLinkDestinations } from '../lib/markdown';
-import { Download, ExternalLink, FileText, Folder, Database } from './icons';
+import { Download, ExternalLink, FileText, Folder } from './icons';
 import { safeMessageLink } from '../lib/message-links';
 import { formatNumber } from '../lib/date-format';
 import { fileSize, textPreviewBytes } from '../lib/attachment-kind';
@@ -32,8 +31,7 @@ import {
 import { SlidesView } from './attachment-slides';
 import { Button, Skeleton } from './ui';
 import { Tabs } from './tabs';
-import { ActionMenuSurface, ActionMenuItem } from './action-menu';
-import { TablePersistDialog } from './table-persist-dialog';
+import { EditableTable } from './editable-table';
 
 type DataKind =
   | 'markdown'
@@ -211,14 +209,13 @@ function SheetView({
 }) {
   const tabsId = useId();
   const [selected, setSelected] = useState(0);
-  const [menuState, setMenuState] = useState<{ x: number; y: number } | null>(null);
-  const [persistDialogOpen, setPersistDialogOpen] = useState(false);
-  const [savedSchemaId, setSavedSchemaId] = useState<string | null>(null);
-  const menuElementRef = useCallback((element: HTMLDivElement | null) => {
-    if (element) element.focus({ preventScroll: true });
-  }, []);
   const multiple = sheets.length > 1;
   const sheet = sheets[selected];
+
+  if (artifactId && artifactName) {
+    return <EditableTable sheet={sheet} artifactId={artifactId} artifactName={artifactName} />;
+  }
+
   const width = Math.max(0, ...sheet.rows.map((row) => row.length));
   const headings = Array.from({ length: width }, (_, index) =>
     sheet.header ? sheet.rows[0]?.[index] || columnName(index) : columnName(index),
@@ -233,20 +230,6 @@ function SheetView({
     );
   });
 
-  useEffect(() => {
-    if (artifactId) {
-      const stored = localStorage.getItem('nod-artifact-tables');
-      if (stored) {
-        try {
-          const mapping = JSON.parse(stored);
-          if (mapping[artifactId]) {
-            setSavedSchemaId(mapping[artifactId]);
-          }
-        } catch {}
-      }
-    }
-  }, [artifactId]);
-
   useEffect(
     () =>
       onDetail(
@@ -254,49 +237,6 @@ function SheetView({
       ),
     [onDetail, total, sheet.columns],
   );
-
-  useEffect(() => {
-    if (!menuState) return;
-    const closeMenu = () => setMenuState(null);
-    const outside = (event: PointerEvent) => {
-      if (!(event.target instanceof Node)) return;
-      const menu = document.querySelector('.sheet-context-menu');
-      if (menu?.contains(event.target)) return;
-      closeMenu();
-    };
-    const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        closeMenu();
-      }
-    };
-    document.addEventListener('pointerdown', outside);
-    document.addEventListener('keydown', keydown);
-    return () => {
-      document.removeEventListener('pointerdown', outside);
-      document.removeEventListener('keydown', keydown);
-    };
-  }, [menuState]);
-
-  const handleContextMenu = useCallback(
-    (event: React.MouseEvent) => {
-      if (!artifactId || !artifactName) return;
-      event.preventDefault();
-      setMenuState({ x: event.clientX, y: event.clientY });
-    },
-    [artifactId, artifactName],
-  );
-
-  const closeMenu = useCallback(() => setMenuState(null), []);
-
-  const handleSaveTable = useCallback(() => {
-    closeMenu();
-    setPersistDialogOpen(true);
-  }, [closeMenu]);
-
-  const handleTableSaved = useCallback((schemaId: string) => {
-    setSavedSchemaId(schemaId);
-  }, []);
 
   return (
     <div className="artifact-sheet">
@@ -309,7 +249,6 @@ function SheetView({
           aria-labelledby={multiple ? `${tabsId}-${selected}` : undefined}
           tabIndex={0}
           data-artifact-scroll=""
-          onContextMenu={handleContextMenu}
         >
           <table>
             <thead>
@@ -369,36 +308,6 @@ function SheetView({
           value={String(selected)}
           items={sheets.map((item, index) => ({ value: String(index), label: item.name }))}
           onValueChange={(value) => setSelected(Number(value))}
-        />
-      )}
-      {menuState &&
-        createPortal(
-          <ActionMenuSurface
-            className="sheet-context-menu"
-            style={{
-              position: 'fixed',
-              left: `${menuState.x}px`,
-              top: `${menuState.y}px`,
-              zIndex: 9999,
-            }}
-            ref={menuElementRef}
-            aria-label="Table actions"
-          >
-            <ActionMenuItem onClick={handleSaveTable}>
-              <Database size={16} aria-hidden="true" />
-              Save to Audit Table
-            </ActionMenuItem>
-          </ActionMenuSurface>,
-          document.body,
-        )}
-      {artifactId && artifactName && (
-        <TablePersistDialog
-          sheet={sheet}
-          artifactId={artifactId}
-          artifactName={artifactName}
-          open={persistDialogOpen}
-          onClose={() => setPersistDialogOpen(false)}
-          onSaved={handleTableSaved}
         />
       )}
     </div>
