@@ -10,10 +10,11 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react';
+import { createPortal } from 'react-dom';
 import Markdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { remarkLinkDestinations } from '../lib/markdown';
-import { Download, ExternalLink, FileText, Folder } from './icons';
+import { Download, ExternalLink, FileText, Folder, Database, Clock } from './icons';
 import { safeMessageLink } from '../lib/message-links';
 import { formatNumber } from '../lib/date-format';
 import { fileSize, textPreviewBytes } from '../lib/attachment-kind';
@@ -31,6 +32,8 @@ import {
 import { SlidesView } from './attachment-slides';
 import { Button, Skeleton } from './ui';
 import { Tabs } from './tabs';
+import { ActionMenuSurface, ActionMenuItem } from './action-menu';
+import { TablePersistDialog } from './table-persist-dialog';
 
 type DataKind =
   | 'markdown'
@@ -189,9 +192,22 @@ function columnName(index: number) {
   return label;
 }
 
-function SheetView({ sheets, onDetail }: { sheets: Sheet[]; onDetail(detail: string): void }) {
+function SheetView({
+  sheets,
+  onDetail,
+  artifactId,
+  artifactName,
+}: {
+  sheets: Sheet[];
+  onDetail(detail: string): void;
+  artifactId?: string;
+  artifactName?: string;
+}) {
   const tabsId = useId();
   const [selected, setSelected] = useState(0);
+  const [menuState, setMenuState] = useState<{ x: number; y: number } | null>(null);
+  const [persistDialogOpen, setPersistDialogOpen] = useState(false);
+  const [savedSchemaId, setSavedSchemaId] = useState<string | null>(null);
   const multiple = sheets.length > 1;
   const sheet = sheets[selected];
   const width = Math.max(0, ...sheet.rows.map((row) => row.length));
@@ -207,6 +223,21 @@ function SheetView({ sheets, onDetail }: { sheets: Sheet[]; onDetail(detail: str
       values.filter((value) => numberLike.test(value)).length >= values.length * 0.8
     );
   });
+
+  useEffect(() => {
+    if (artifactId) {
+      const stored = localStorage.getItem('nod-artifact-tables');
+      if (stored) {
+        try {
+          const mapping = JSON.parse(stored);
+          if (mapping[artifactId]) {
+            setSavedSchemaId(mapping[artifactId]);
+          }
+        } catch {}
+      }
+    }
+  }, [artifactId]);
+
   useEffect(
     () =>
       onDetail(
@@ -214,6 +245,27 @@ function SheetView({ sheets, onDetail }: { sheets: Sheet[]; onDetail(detail: str
       ),
     [onDetail, total, sheet.columns],
   );
+
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      if (!artifactId || !artifactName) return;
+      event.preventDefault();
+      setMenuState({ x: event.clientX, y: event.clientY });
+    },
+    [artifactId, artifactName],
+  );
+
+  const closeMenu = useCallback(() => setMenuState(null), []);
+
+  const handleSaveTable = useCallback(() => {
+    closeMenu();
+    setPersistDialogOpen(true);
+  }, [closeMenu]);
+
+  const handleTableSaved = useCallback((schemaId: string) => {
+    setSavedSchemaId(schemaId);
+  }, []);
+
   return (
     <div className="artifact-sheet">
       {width ? (
@@ -225,6 +277,7 @@ function SheetView({ sheets, onDetail }: { sheets: Sheet[]; onDetail(detail: str
           aria-labelledby={multiple ? `${tabsId}-${selected}` : undefined}
           tabIndex={0}
           data-artifact-scroll=""
+          onContextMenu={handleContextMenu}
         >
           <table>
             <thead>
@@ -284,6 +337,41 @@ function SheetView({ sheets, onDetail }: { sheets: Sheet[]; onDetail(detail: str
           value={String(selected)}
           items={sheets.map((item, index) => ({ value: String(index), label: item.name }))}
           onValueChange={(value) => setSelected(Number(value))}
+        />
+      )}
+      {menuState &&
+        createPortal(
+          <ActionMenuSurface
+            style={{
+              position: 'fixed',
+              left: `${menuState.x}px`,
+              top: `${menuState.y}px`,
+              zIndex: 9999,
+            }}
+            onBlur={closeMenu}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={closeMenu}
+            tabIndex={-1}
+          >
+            <ActionMenuItem onClick={handleSaveTable}>
+              <Database size={16} aria-hidden="true" />
+              Save to Audit Table
+            </ActionMenuItem>
+            <ActionMenuItem disabled={!savedSchemaId}>
+              <Clock size={16} aria-hidden="true" />
+              View History
+            </ActionMenuItem>
+          </ActionMenuSurface>,
+          document.body,
+        )}
+      {artifactId && artifactName && (
+        <TablePersistDialog
+          sheet={sheet}
+          artifactId={artifactId}
+          artifactName={artifactName}
+          open={persistDialogOpen}
+          onClose={() => setPersistDialogOpen(false)}
+          onSaved={handleTableSaved}
         />
       )}
     </div>
@@ -528,6 +616,8 @@ export default function AttachmentData({
   const [error, setError] = useState(false);
   const [left, setLeft] = useState(false);
   const fail = useCallback(() => setError(true), []);
+  const artifactId = item.id;
+  const artifactName = item.name;
   useEffect(() => {
     const controller = new AbortController();
     setBuffer(null);
@@ -637,7 +727,15 @@ export default function AttachmentData({
     );
   if (kind === 'presentation')
     return <SlidesView buffer={buffer} onDetail={onDetail} onError={fail} />;
-  if (content?.kind === 'sheets') return <SheetView sheets={content.sheets} onDetail={onDetail} />;
+  if (content?.kind === 'sheets')
+    return (
+      <SheetView
+        sheets={content.sheets}
+        onDetail={onDetail}
+        artifactId={artifactId}
+        artifactName={artifactName}
+      />
+    );
   if (content?.kind === 'archive')
     return content.entries.length ? (
       <ArchiveView entries={content.entries} />
@@ -680,6 +778,14 @@ export default function AttachmentData({
         onLeave={() => setLeft(true)}
       />
     );
-  if (csv) return <SheetView sheets={csv} onDetail={onDetail} />;
+  if (csv)
+    return (
+      <SheetView
+        sheets={csv}
+        onDetail={onDetail}
+        artifactId={artifactId}
+        artifactName={artifactName}
+      />
+    );
   return <PreviewUnavailable item={item} />;
 }

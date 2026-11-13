@@ -2083,3 +2083,74 @@ input[type='range']:disabled {
   line-height: 1.5;
   text-align: center;
 }
+
+.table-persist-dialog .dialog-body {
+  max-height: 60vh;
+  overflow-y: auto;
+  display: grid;
+  gap: 20px;
+}
+
+.table-persist-columns {
+  display: grid;
+  gap: 12px;
+}
+
+.table-persist-columns-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.table-persist-column-row {
+  display: grid;
+  grid-template-columns: 1fr 140px;
+  gap: 12px;
+  align-items: end;
+}
+
+.table-persist-column-field {
+  display: grid;
+  gap: 6px;
+}
+
+.table-persist-column-label {
+  font-size: var(--text-control);
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.table-persist-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.table-persist-preview-scroll {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--control-radius);
+  max-height: 240px;
+}
+
+.table-persist-preview-table {
+  width: 100%;
+  font-size: var(--text-control);
+  border-collapse: collapse;
+}
+
+.table-persist-preview-table th,
+.table-persist-preview-table td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.table-persist-preview-table th {
+  background: var(--surface-subtle);
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+}
+
+.table-persist-preview-table td {
+  background: var(--surface);
+}
