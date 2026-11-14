@@ -6,6 +6,7 @@ export interface ColumnMapping {
   type: 'text' | 'number' | 'date' | 'boolean' | 'select';
   required?: boolean;
   options?: string[];
+  default_value?: unknown;
 }
 
 export interface ConvertedTable {

@@ -1,0 +1,24 @@
+========================================
+DEMARRAGE RAPIDE DU PROJET NOD
+========================================
+
+PREREQUIS:
+1. Docker Desktop doit etre lance manuellement
+   (icone verte dans la barre des taches)
+
+DEMARRER TOUT EN UNE COMMANDE:
+1. Double-cliquer sur: demarrer-tout-projet.bat
+2. Attendre 1-2 minutes
+3. Ouvrir l'URL affichee dans le navigateur
+
+URL D'ACCES:
+http://localhost:4310/#access=KXkl8AoKlM3iFaXdP9e9RjCAiyHIyAbbYdchI2DkaRU
+
+ARRETER LE SYSTEME:
+1. Dans la fenetre du serveur: Ctrl+C
+2. Puis executer: arreter-tout.bat
+
+DOCUMENTATION COMPLETE:
+Lire: 00-README-DEMARRAGE.md
+
+========================================

@@ -1,0 +1,26 @@
+{
+  "verdict": "CHANGES_REQUESTED",
+  "findings": [
+    {
+      "severity": "BLOCKER",
+      "description": "Race condition sur sauvegardes simultanées: Le flag pendingSave est remis à false avant le début de la sauvegarde (editable-table.tsx:123), permettant le démarrage de sauvegardes concurrentes. Cela peut causer des conflits lors de l'assignation des row._id pour les nouvelles lignes. Solution: Ajouter un flag isSaving séparé qui refuse les nouvelles sauvegardes tant qu'une est en cours."
+    },
+    {
+      "severity": "BLOCKER",
+      "description": "Endpoint GET /api/audit/schemas/by-name/:name manquant dans routes-audit-tables.ts. La spécification demandait cet endpoint pour restaurer les tables par nom, mais l'implémentation actuelle utilise uniquement localStorage, ce qui empêche la restauration cross-browser et perd les données si localStorage est effacé. Solution: Ajouter l'endpoint et modifier la logique de restauration pour vérifier d'abord par table_name."
+    },
+    {
+      "severity": "BLOCKER",
+      "description": "Tests frontend automatisés absents. Aucun test E2E vérifie le cycle complet: Upload CSV → édition → auto-save → restauration. Les fichiers test-audit-tables-frontend.html et test-audit-direct-postgres.html à la racine sont des tests manuels. L'isolation multi-utilisateurs (owner_id) n'est pas testée. Solution: Ajouter src/web/components/editable-table.test.tsx avec tests E2E incluant race conditions et owner isolation."
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "console.error non supprimés dans editable-table.tsx (lignes 111 et 216). Selon AGENTS.md section Code Quality: 'Pas de console.log oubliés'. Solution: Remplacer par un système de notification utilisateur ou logger côté serveur."
+    },
+    {
+      "severity": "MEDIUM",
+      "description": "Mutation directe du state React dans saveData() (editable-table.tsx:158-160): row._id = data.id et delete row._isNew modifient directement l'objet au lieu d'utiliser setRows(). Bien que suivi d'un re-render, c'est contraire aux bonnes pratiques React. Solution: Utiliser setRows() pour créer un nouveau array immutable."
+    }
+  ],
+  "reviewDoc": "h:/nod_n8n/.agents/tasks/fix-audit-inline/review.md"
+}

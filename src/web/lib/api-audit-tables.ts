@@ -22,7 +22,7 @@ interface DataVersion {
 }
 
 export async function saveSheetToAuditTable(
-  converted: ConvertedTable,
+  converted: ConvertedTable & { category?: 'accounting' | 'compliance' | 'risk' | 'general' },
 ): Promise<{ schemaId: string }> {
   const createResponse = await fetch('/api/audit/schemas', {
     method: 'POST',
@@ -32,6 +32,7 @@ export async function saveSheetToAuditTable(
       table_name: converted.tableName,
       display_name: converted.displayName,
       column_definitions: converted.columnDefinitions,
+      category: converted.category || 'general',
     }),
   });
 

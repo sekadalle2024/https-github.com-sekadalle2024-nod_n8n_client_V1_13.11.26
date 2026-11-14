@@ -33,6 +33,7 @@ import './components/attachment-card.css';
 import './components/artifact-drawer.css';
 import './components/n8n-canvas.css';
 import './components/vault-details.css';
+import './components/editable-table.css';
 import './pages/browser.css';
 import './pages/privacy.css';
 import './pages/onboarding/onboarding.css';

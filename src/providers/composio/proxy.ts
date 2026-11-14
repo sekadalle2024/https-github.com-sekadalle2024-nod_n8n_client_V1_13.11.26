@@ -99,7 +99,7 @@ export function createComposioProxy(options: {
       'x-nod-public-key': current.publicKey,
       'x-nod-timestamp': timestamp,
       'x-nod-request-id': requestId,
-      'x-nod-signature': sign(null, Buffer.from(canonical), current.key).toString('base64url'),
+      'x-nod-signature': sign(null, Buffer.from(canonical), current.key!).toString('base64url'),
     });
     if (url.pathname === '/v2/files/upload') headers.set('x-nod-content-sha256', bodyHash);
     if (value.headers.has('content-type'))

@@ -37,6 +37,27 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get<{ Querystring: { name: string } }>(
+    '/api/audit/schemas/by-name',
+    async (request, reply) => {
+      try {
+        const { name } = z.object({ name: z.string().min(1) }).parse(request.query);
+        const schemas = await transaction((client) => getTableSchemas(client), pool);
+        const schema = schemas.find((s) => s.table_name === name);
+
+        if (!schema) {
+          reply.code(404);
+          return { error: 'Table not found', exists: false };
+        }
+
+        return { schema, exists: true, schemaId: schema.id };
+      } catch (error) {
+        reply.code(500);
+        return { error: 'Failed to find table by name' };
+      }
+    },
+  );
+
   app.get<{ Params: { schemaId: string } }>(
     '/api/audit/schemas/:schemaId',
     async (request, reply) => {
@@ -133,6 +154,7 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
               row_data: body.row_data,
             }),
           pool,
+          undefined,
         );
 
         reply.code(201);
@@ -162,6 +184,7 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
               rows: body.rows,
             }),
           pool,
+          undefined,
         );
 
         reply.code(201);
@@ -189,6 +212,7 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
             row_data: body.row_data,
           }),
         pool,
+        undefined,
       );
 
       if (!data) {
@@ -219,17 +243,21 @@ export function registerAuditTablesRoutes(app: FastifyInstance) {
           })
           .parse(request.body);
 
-        const results = await transaction(async (client) => {
-          const updated = [];
-          for (const update of body.updates) {
-            const result = await updateTableData(client, {
-              data_id: update.data_id,
-              row_data: update.row_data,
-            });
-            if (result) updated.push(result);
-          }
-          return updated;
-        }, pool);
+        const results = await transaction(
+          async (client) => {
+            const updated = [];
+            for (const update of body.updates) {
+              const result = await updateTableData(client, {
+                data_id: update.data_id,
+                row_data: update.row_data,
+              });
+              if (result) updated.push(result);
+            }
+            return updated;
+          },
+          pool,
+          undefined,
+        );
 
         return { data: results };
       } catch (error) {
