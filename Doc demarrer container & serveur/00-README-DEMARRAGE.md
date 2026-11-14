@@ -18,21 +18,91 @@ Permettre le démarrage rapide et fiable de :
 
 ## 📂 Fichiers de ce Dossier
 
-| Fichier                            | Description                                           |
-| ---------------------------------- | ----------------------------------------------------- |
-| **00-README-DEMARRAGE.md**         | Ce fichier (guide principal)                          |
-| **01-TEST-SYSTEME-PERSISTANCE.md** | Guide de test complet du système                      |
-| **02-SCRIPTS-REFERENCE.md**        | Documentation détaillée de tous les scripts           |
-| **INDEX-DOCUMENTATION.md**         | Index complet de toute la documentation               |
-| **demarrer-tout-projet.bat** ⭐    | Script TOUT-EN-UN (containers + serveur) - RECOMMANDÉ |
-| **demarrer-tout.bat**              | Script pour démarrer uniquement les containers Docker |
-| **demarrer-serveur.bat**           | Script pour démarrer uniquement le serveur Node.js    |
-| **verifier-etat.bat**              | Script pour vérifier l'état de tous les services      |
-| **arreter-tout.bat**               | Script pour arrêter proprement tous les services      |
+### Scripts de Démarrage
+
+| Fichier                         | Description                                           |
+| ------------------------------- | ----------------------------------------------------- |
+| **demarrer-tout-projet.bat** ⭐ | Script TOUT-EN-UN (containers + serveur) - RECOMMANDÉ |
+| **demarrer-tout.bat**           | Script pour démarrer uniquement les containers Docker |
+| **demarrer-serveur.bat**        | Script pour démarrer uniquement le serveur Node.js    |
+| **verifier-etat.bat**           | Script pour vérifier l'état de tous les services      |
+| **arreter-tout.bat**            | Script pour arrêter proprement tous les services      |
+
+### Scripts Git & GitHub
+
+| Fichier                   | Description                                        |
+| ------------------------- | -------------------------------------------------- |
+| **commit-changes.bat**    | Commit des modifications locales                   |
+| **push-to-github.bat**    | Push vers GitHub (avec hook lefthook)              |
+| **push-no-verify.bat**    | Push vers GitHub (bypass hook - use avec prudence) |
+| **commit-et-push.bat** ⭐ | TOUT-EN-UN: Commit + Push en une commande          |
+
+### Documentation
+
+| Fichier                            | Description                                 |
+| ---------------------------------- | ------------------------------------------- |
+| **00-README-DEMARRAGE.md**         | Ce fichier (guide principal)                |
+| **01-TEST-SYSTEME-PERSISTANCE.md** | Guide de test complet du système            |
+| **02-SCRIPTS-REFERENCE.md**        | Documentation détaillée de tous les scripts |
+| **INDEX-DOCUMENTATION.md**         | Index complet de toute la documentation     |
 
 ---
 
-## 🚀 Démarrage Rapide
+## � Sauvegarder votre Travail sur GitHub
+
+### Option A : Commit et Push Automatique (Recommandé) ⚡
+
+**Une seule commande pour tout sauvegarder** :
+
+```powershell
+cd "h:\nod_n8n\Doc demarrer container & serveur"
+.\commit-et-push.bat
+```
+
+**Ce qui se passe** :
+
+1. ✓ Ajout de tous les fichiers modifiés
+2. ✓ Création du commit (vous choisissez le message)
+3. ✓ Push vers GitHub (remote: backup)
+4. ✓ Vérification lefthook (lint TypeScript)
+
+**Temps estimé** : ~2-5 minutes (selon la taille)
+
+---
+
+### Option B : Étape par Étape
+
+#### Étape 1 : Commit
+
+```powershell
+.\commit-changes.bat
+```
+
+Entrez votre message de commit quand demandé.
+
+#### Étape 2 : Push
+
+```powershell
+.\push-to-github.bat
+```
+
+Authentifiez-vous avec GitHub si demandé.
+
+---
+
+### Option C : Push sans vérification (Urgence)
+
+Si le hook lefthook bloque à cause d'erreurs TypeScript non-critiques :
+
+```powershell
+.\push-no-verify.bat
+```
+
+⚠️ **Utilisez cette option avec prudence** - elle bypasse les vérifications de code.
+
+---
+
+## �🚀 Démarrage Rapide
 
 ### Option A : Démarrage Automatique (Recommandé) ⚡
 
