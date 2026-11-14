@@ -823,7 +823,167 @@ docker compose build --no-cache
 
 ---
 
+---
+
+## 🚀 Migration Complete - Prochaines Étapes
+
+### Scripts de Migration Disponibles
+
+Le projet dispose maintenant de **scripts automatisés** pour faciliter la migration de Docker Desktop vers Docker dans WSL2.
+
+#### 1️⃣ Script de Migration Automatique
+
+**Fichier** : `h:\nod_n8n\Doc installation wsl2 ubuntu\migrate-to-wsl2.ps1`
+
+Ce script PowerShell effectue automatiquement:
+
+- ✅ Vérification WSL2 et Ubuntu-22.04
+- ✅ Installation Docker Engine dans WSL2
+- ✅ Configuration auto-start avec systemd
+- ✅ Copie des fichiers projet
+- ✅ Tests de l'installation
+
+**Usage** :
+
+```powershell
+# Depuis h:\nod_n8n
+powershell -ExecutionPolicy Bypass -File ".\Doc installation wsl2 ubuntu\migrate-to-wsl2.ps1"
+```
+
+**Durée** : 15-20 minutes
+
+#### 2️⃣ Script de Démarrage WSL2
+
+**Fichier** : `h:\nod_n8n\Doc demarrer container & serveur\demarrer-tout-projet-wsl2.bat`
+
+Ce script batch remplace l'ancien `demarrer-tout-projet.bat` pour utiliser Docker dans WSL2:
+
+- ✅ Démarre WSL2 Ubuntu-22.04
+- ✅ Démarre Docker daemon
+- ✅ Lance les 4 containers Nod
+- ✅ Attend PostgreSQL ready (jusqu'à 120s)
+- ✅ Démarre le serveur Node.js
+- ✅ Ouvre le navigateur
+
+**Usage** :
+
+```powershell
+# Depuis h:\nod_n8n
+.\Doc demarrer container & serveur\demarrer-tout-projet-wsl2.bat
+```
+
+#### 3️⃣ Guide de Migration Complet
+
+**Fichier** : `h:\nod_n8n\Doc installation wsl2 ubuntu\01-MIGRATION-GUIDE.md`
+
+Guide détaillé avec:
+
+- ✅ Prérequis et checklist
+- ✅ Comparaison Docker Desktop vs WSL2 Docker
+- ✅ Instructions pas-à-pas
+- ✅ Vérifications post-migration
+- ✅ Dépannage complet (8 problèmes courants)
+- ✅ Instructions de rollback
+- ✅ Optimisations avancées
+
+**Consultez ce guide** avant de migrer !
+
+### Économie RAM Attendue
+
+| Scénario                    | Docker Desktop | WSL2 Docker | Économie |
+| --------------------------- | -------------- | ----------- | -------- |
+| **Idle**                    | ~2 GB          | ~500 MB     | **75%**  |
+| **Avec Nod (4 containers)** | 4-6 GB         | 2-3 GB      | **50%**  |
+
+### Migration Rapide - 3 Commandes
+
+```powershell
+# 1. Arrêter Docker Desktop
+Stop-Process -Name "Docker Desktop" -Force -ErrorAction SilentlyContinue
+
+# 2. Migrer vers WSL2
+powershell -ExecutionPolicy Bypass -File ".\Doc installation wsl2 ubuntu\migrate-to-wsl2.ps1"
+
+# 3. Redémarrer WSL2 et démarrer Nod
+wsl --shutdown
+.\Doc demarrer container & serveur\demarrer-tout-projet-wsl2.bat
+```
+
+### Vérification Post-Migration
+
+```powershell
+# Dans WSL2
+wsl -d Ubuntu-22.04
+
+# Vérifier Docker
+docker --version
+docker ps
+
+# Vérifier containers Nod
+docker ps --filter name=nod
+# Attendu: 4 containers
+```
+
+### Rollback (Retour Docker Desktop)
+
+Si problème, retour simple:
+
+```powershell
+# 1. Arrêter WSL2
+wsl --shutdown
+
+# 2. Relancer Docker Desktop
+Start-Process "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+
+# 3. Utiliser ancien script
+.\Doc demarrer container & serveur\demarrer-tout-projet.bat
+```
+
+### Fichiers Projet dans WSL2
+
+Après migration, les fichiers sont accessibles à **trois emplacements** :
+
+1. **Windows natif** : `h:\nod_n8n\` (recommandé pour développement)
+2. **WSL2 mount** : `/mnt/h/nod_n8n` (utilisé par Docker)
+3. **WSL2 copie** : `/home/<user>/nod/` (backup configuration)
+
+Les containers Docker utilisent `/mnt/h/nod_n8n` pour accéder aux fichiers Windows.
+
+### Commandes Utiles
+
+```powershell
+# Voir containers depuis Windows
+wsl -d Ubuntu-22.04 docker ps
+
+# Logs en temps réel
+wsl -d Ubuntu-22.04 bash -c "cd /mnt/h/nod_n8n && docker compose logs -f"
+
+# Entrer dans WSL2
+wsl -d Ubuntu-22.04
+
+# Arrêter containers
+wsl -d Ubuntu-22.04 bash -c "cd /mnt/h/nod_n8n && docker compose down"
+```
+
+### Support et Dépannage
+
+Consultez le **guide de migration** pour dépannage détaillé:
+
+- ✅ Docker ne démarre pas
+- ✅ Permission denied
+- ✅ Containers ne démarrent pas
+- ✅ PostgreSQL timeout
+- ✅ Réseau lent
+- ✅ Espace disque plein
+- ✅ RAM excessive
+- ✅ Et plus...
+
+**Fichier** : `.\Doc installation wsl2 ubuntu\01-MIGRATION-GUIDE.md`
+
+---
+
 **Créé** : 13 novembre 2026, 01:00 UTC  
+**Mis à jour** : Novembre 2026 (ajout scripts migration)  
 **Par** : Kiro (Assistant IA)  
-**Status** : ✅ Ubuntu 22.04 installé, Docker à configurer  
-**Prochaine étape** : Configuration initiale Ubuntu (`wsl -d Ubuntu-22.04`)
+**Status** : ✅ Scripts de migration prêts  
+**Prochaine étape** : Exécuter `migrate-to-wsl2.ps1` puis `demarrer-tout-projet-wsl2.bat`
